@@ -1,0 +1,98 @@
+====================================================================
+ Banchmark Installation
+====================================================================
+
+[root@localhost ~]# yum install blas
+[root@localhost ~]# yum install epel-release
+[root@localhost ~]# yum install atlas
+[root@localhost ~]# yum install blas-devel
+[root@localhost ~]# wget https://netlib.org/benchmark/hpl/hpl-2.3.tar.gz
+[root@localhost ~]# tar -xvf hpl-2.3.tar.gz
+[root@localhost ~]# wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.4.tar.gz
+[root@localhost ~]# tar -xvf openmpi-4.1.4.tar.gz
+[root@localhost ~]# cd openmpi-4.1.4
+[root@localhost openmpi-4.1.4]# ./configure --prefix=/opt/openmpi-4.1.4 --enable-orterun-prefix-by-default
+[root@localhost openmpi-4.1.4]# make -j6
+[root@localhost openmpi-4.1.4]# make install
+[root@localhost ~]# export PATH=/opt/openmpi-4.1.4/bin:$PATH
+[root@localhost ~]# echo$PATH
+[root@localhost ~]# export LD_LIBRARY_PATH=/opt/openmpi-4.1.4/lib:$LD_LIBRARY_PATH
+[root@localhost ~]# cd /root/hpl-2.3/
+[root@localhost hpl-2.3]# cd setup/
+[root@localhost setup]# cp Make.Linux_PII_CBLAS /root/hpl-2.3 (copy 1 directory before)
+
+======================================================================================
+ Open In New Terminal
+======================================================================================
+[root@localhost ~]# cd /root/hpl-2.3/
+[root@localhost ~]# vi Make.Linux_PII_CBLAS
+
+------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# - HPL Directory Structure / HPL library ------------------------------
+# ----------------------------------------------------------------------
+#
+TOPdir       = /root/hpl-2.3
+
+# ----------------------------------------------------------------------
+# - Message Passing library (MPI) --------------------------------------
+# ----------------------------------------------------------------------
+# MPinc tells the  C  compiler where to find the Message Passing library
+# header files,  MPlib  is defined  to be the name of  the library to be
+# used. The variable MPdir is only used for defining MPinc and MPlib.
+#
+MPdir        = /opt/openmpi-4.1.4
+MPinc        = -I$(MPdir)/include
+MPlib        = $(MPdir)/lib/libmpi.so.40
+
+# ----------------------------------------------------------------------
+# - Compilers / linkers - Optimization flags ---------------------------
+# ----------------------------------------------------------------------
+#
+CC           = /usr/bin/gcc
+CCNOOPT      = $(HPL_DEFS)
+CCFLAGS      = $(HPL_DEFS) -fomit-frame-pointer -O3 -funroll-loops
+#
+# On some platforms,  it is necessary  to use the Fortran linker to find
+# the Fortran internals used in the BLAS library.
+#
+LINKER       = /usr/bin/gcc
+
+
+# ----------------------------------------------------------------------
+# - Linear Algebra library (BLAS or VSIPL) -----------------------------
+# ----------------------------------------------------------------------
+# LAinc tells the  C  compiler where to find the Linear Algebra  library
+# header files,  LAlib  is defined  to be the name of  the library to be
+# used. The variable LAdir is only used for defining LAinc and LAlib.
+#
+LAdir        = /usr/lib64/atlas
+LAinc        =
+LAlib        = $(LAdir)/libsatlas.so.3 $(LAdir)/libtatlas.so.3
+
+
+--------------------------------------------------------------------------------
+
+[root@localhost hpl-2.3]# make arch=Linux_PII_CBLAS
+[root@localhost hpl-2.3]# cd bin/
+[root@localhost bin]# cd Linux_PII_CBLAS/
+[root@localhost Linux_PII_CBLAS]# ls
+[root@localhost Linux_PII_CBLAS]# vi HPL.dat 
+-------------------------------------------------
+HPLinpack benchmark input file
+Innovative Computing Laboratory, University of Tennessee
+HPL.out      output file name (if any)
+6            device out (6=stdout,7=stderr,file)
+1            # of problems sizes (N)
+52428        Ns
+1            # of NBs
+128          NBs
+0            PMAP process mapping (0=Row-,1=Column-major)
+1            # of process grids (P x Q)
+2            Ps
+4            Qs
+
+---------------------------------------------------------------------------------
+[root@localhost Linux_PII_CBLAS]# mpirun --allow-run-as-root -np 8 ./xhpl HPL.dat 
+
+======================================================================================
